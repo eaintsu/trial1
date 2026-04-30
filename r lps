@@ -1,0 +1,64 @@
+> library(readxl)
+> library(tidyverse)
+> library(reshape2)
+> 
+> # --- 1. SETTINGS ---
+> file_path <- "/Users/eaintsu/Desktop/trial.xlsx"
+> plate_cols <- c("alpha", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
+> 
+> # --- 2. LOAD & FORMAT ---
+> readings <- read_excel(file_path, sheet = "Data")[, 1:13]
+New names:                                                                                                 
+• `` -> `...1`
+• `` -> `...14`
+> template <- read_excel(file_path, sheet = "Template")[, 1:13]
+New names:                                                                                                 
+• `` -> `...1`
+> standards_key <- read_excel(file_path, sheet = "Standards")
+> dilutions <- read_excel(file_path, sheet = "Dilutions")                                                  
+>                                                                                                          
+> colnames(readings) <- plate_cols
+> colnames(template) <- plate_cols
+> 
+> # Melt and Merge
+> readings_long <- melt(readings, id.vars = "alpha", variable.name = "col") %>% unite("well", alpha, col, sep="")
+> template_long <- melt(template, id.vars = "alpha", variable.name = "col", na.rm = TRUE) %>% unite("well", alpha, col, sep="")
+> plate_data <- inner_join(template_long, readings_long, by = "well") %>% setNames(c("well", "sample", "abs"))
+> 
+> # Calculate Means
+> mean_stats <- plate_data %>% 
++     group_by(sample) %>% 
++     summarise(mean_abs = mean(abs), .groups = 'drop')
+> 
+> # --- 3. PLATEAU CUT-OFF & MODEL ---
+> std_data <- mean_stats %>%
++     filter(str_detect(sample, "^Standard")) %>%
++     inner_join(standards_key, by = "sample") %>%
++     arrange(std_con) %>%
++     mutate(diff_abs = c(NA, diff(mean_abs)),
++            diff_con = c(NA, diff(std_con)),
++            local_slope = diff_abs / diff_con)
+> 
+> # Find first point where slope drops below 15% of initial segment
+> initial_slope <- std_data$local_slope[2]
+> linear_region <- std_data %>%
++     filter(local_slope >= (initial_slope * 0.15) | is.na(local_slope))
+> 
+> # Final Linear Model
+> fit <- lm(mean_abs ~ std_con, data = linear_region)
+> slope <- coef(fit)[2]
+> intercept <- coef(fit)[1]
+> 
+> # --- 4. CALCULATE UNKNOWNS ---
+> final_results <- mean_stats %>%
++     filter(!str_detect(sample, "^Standard")) %>%
++     mutate(calc_conc = (mean_abs - intercept) / slope,
++            calc_conc = ifelse(calc_conc < 0, 0, calc_conc)) %>%
++     left_join(dilutions, by = "sample") %>%
++     mutate(df = replace_na(df, 1),
++            final_conc = calc_conc * df)
+> 
+> # Output
+> print(paste("R2 of Linear Region:", round(summary(fit)$r.squared, 4)))
+[1] "R2 of Linear Region: 0.9477"
+> print(final_results %>% select(sample, mean_abs, final_conc)
