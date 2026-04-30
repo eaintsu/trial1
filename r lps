@@ -56,3 +56,53 @@ final_results <- mean_stats %>%
 # Output
 print(paste("R2 of Linear Region:", round(summary(fit)$r.squared, 4)))
 print(final_results %>% select(sample, mean_abs, final_conc))
+
+#Overwriting the file with 1st plate
+library(readxl)
+library(tidyverse)
+library(writexl)
+
+# 1. Path to your master file
+master_file <- "lpsfemalesresults.xlsx"
+
+# 2. Load the existing master data
+# This contains your Age, Sex, and IDs
+master_df <- read_excel(master_file)
+
+# 3. Clean up the Sample IDs to ensure a perfect match
+# We convert to character and trim any hidden spaces
+master_df <- master_df %>% mutate(sample = as.character(sample) %>% str_trim())
+results_for_merge <- final_results %>% 
+  mutate(sample = as.character(sample) %>% str_trim()) %>%
+  select(sample, final_conc)
+
+# 4. Merge the new concentrations into the master dataframe
+# This will add the 'final_conc' values to the matching sample rows
+updated_master <- master_df %>%
+  left_join(results_for_merge, by = "sample") %>%
+  rename(`LPS conc: (ng/ml)` = final_conc)
+
+# 5. OVERWRITE the original file
+# This saves the updated dataframe back to the same name
+write_xlsx(updated_master, master_file)
+
+message("Success: 'lpsfemalesresults.xlsx' has been updated and overwritten.")
+
+#OVERWRITING THE 2ND PLATE
+# 1. Load your master file and your new plate results
+master_df <- read_excel("lpsfemalesresults.xlsx")
+new_plate_results <- final_results_plate2 # The 'final_results' table from your 2nd plate code
+
+# 2. Update only the missing values
+# rows_update() is a great function that finds the ID and replaces just that one column
+updated_df <- master_df %>%
+  rows_update(new_plate_results %>% 
+                select(sample, `LPS conc: (ng/ml)` = final_conc), 
+              by = "sample")
+
+# 3. Overwrite
+write_xlsx(updated_df, "lpsfemalesresults.xlsx")
+
+
+
+
