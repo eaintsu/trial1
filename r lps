@@ -7,10 +7,10 @@ file_path <- "trial.xlsx"
 plate_cols <- c("alpha", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12")
 
 # --- 2. LOAD & FORMAT ---
-readings <- read_excel(file_path, sheet = "Data")[, 1:13]
-template <- read_excel(file_path, sheet = "Template")[, 1:13]
-standards_key <- read_excel(file_path, sheet = "Standards")
-dilutions <- read_excel(file_path, sheet = "Dilutions")
+readings <- read_excel(file_path, sheet = 1)[, 1:13]
+template <- read_excel(file_path, sheet = 2)[, 1:13]
+standards_key <- read_excel(file_path, sheet = 3)
+dilutions <- read_excel(file_path, sheet = 4)
 
 colnames(readings) <- plate_cols
 colnames(template) <- plate_cols
@@ -86,7 +86,7 @@ updated_master <- master_df %>%
 # This saves the updated dataframe back to the same name
 write_xlsx(updated_master, master_file)
 
-message("Success: 'lpsfemalesresults.xlsx' has been updated and overwritten.")
+message("Success: file has been updated and overwritten.")
 
 #OVERWRITING THE 2ND PLATE
 # 1. Load your master file and your new plate results
@@ -101,8 +101,44 @@ updated_df <- master_df %>%
               by = "sample")
 
 # 3. Overwrite
-write_xlsx(updated_df, "lpsfemalesresults.xlsx")
+write_xlsx(updated_df, "/Users/eaintsu/Desktop/lpsfemales1.xlsx")
 
+#plotting 
+library(readxl)
+library(tidyverse)
+library(ggpubr) 
+library(ggsignif)  
+# 1. Load the master data
+
+df <- read_excel("/Users/eaintsu/Desktop/lpsfemales1.xlsx")
+
+# 2. Filter and Bin
+plot_df <- df %>%
+  filter(!is.na(`LPS conc: (ng/ml)`)) %>%
+  mutate(Age_Group = case_when(
+    Age <= 6  ~ "Young (=<6m)",
+    Age >= 18 & str_detect(sample, "\\.1") ~ "Old (1:2 Dil)", # Look for .1
+    Age >= 18 & !str_detect(sample, "\\.1") ~ "Old (Undiluted)" # Everything else over 18
+  )) %>%
+  filter(!is.na(Age_Group)) %>%
+  # THE FIX: Explicitly set the order of categories
+  mutate(Age_Group = factor(Age_Group, levels = c("Young (=<6m)","Old (Undiluted)", "Old (1:2 Dil)")))
+# 3. Create the Plot with T-Test
+ggplot(plot_df, aes(x = Age_Group, y = `LPS conc: (ng/ml)`, fill = Age_Group)) +
+  geom_bar(stat = "summary", fun = "mean", alpha = 0.4, color = "black", width = 0.5) +
+  geom_errorbar(stat = "summary", fun.data = "mean_se", width = 0.1) +
+  geom_jitter(width = 0.1, size = 1.5, alpha = 0.7) +
+  geom_text_repel(aes(label = sample), size = 3, fontface = "bold") +
+  geom_signif(comparisons = list(c("Young (=<6m)","Old (Undiluted)", 
+                               "Old (1:2 Dil)" )),map_signif_level = TRUE, size = 0.5, textsize = 8) +
+  
+  scale_fill_manual(values = c("Young (=<6m)" = "#9c6bb5", "Old (18-22m)" = "#6d3c76")) +
+  theme_classic() +
+  labs(title = "Serum LPS: Age-Associated Differences",
+       subtitle = "Independent T-test comparing Young and Old cohorts",
+       y = "LPS (ng/ml)",
+       x = "Age Cohort") +
+  theme(legend.position = "none")
 
 
 
