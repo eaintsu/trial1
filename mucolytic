@@ -1,0 +1,68 @@
+library(readxl)
+library(tidyverse)
+library(ggpubr)
+library(ggsignif)
+
+# 1. Load and Clean Data
+df <- read_excel("/Users/eaintsu/Desktop/Mucolytic all animals data.xlsx")
+
+plot_df <- df %>%
+  # Exclude samples with "CB" in the title (using the 'sample' column)
+  filter(!str_detect(sample, "CB")) %>% 
+  mutate(
+    Age = as.numeric(Age),
+    `frailty score` = as.numeric(`frailty score`),
+    Sex = trimws(toupper(Sex))
+  ) %>%
+  filter(!is.na(`Average Halo size(mm)`)) %>%
+  mutate(
+    Group = case_when(
+      Age <= 6 ~ "Young",
+      Age >= 18 & `frailty score` < 1 ~ "Old (Non-Frail)",
+      Age >= 18 & `frailty score` >= 1 ~ "Old (Frail)",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(Group)) %>%
+  mutate(Group = factor(Group, levels = c("Young", "Old (Non-Frail)", "Old (Frail)")))
+
+# 2. Define Comparisons for Age/Frailty within each Sex
+age_comparisons <- list(
+  c("Young", "Old (Non-Frail)"),
+  c("Old (Non-Frail)", "Old (Frail)"),
+  c("Young", "Old (Frail)")
+)
+
+# 3. Create the Plot
+ggplot(plot_df, aes(x = Group, y = `Average Halo size(mm)`, fill = Group)) +
+  geom_bar(stat = "summary", fun = "mean", alpha = 0.5, color = "black", width = 0.7) +
+  geom_errorbar(stat = "summary", fun.data = "mean_se", width = 0.1) +
+  geom_jitter(width = 0.15, size = 1.5, alpha = 0.6) +
+  
+  # Age/Frailty comparisons within the Sex facets
+  geom_signif(comparisons = age_comparisons, 
+              map_signif_level = TRUE, 
+              step_increase = 0.12, # Prevents brackets from overlapping
+              textsize = 4,
+              vjust = 0.5) +
+  
+  scale_fill_manual(values = c("Young" = "#BFA4FF", 
++                                  "Old (Non-Frail)" = "#8B82E2", 
++                                  "Old (Frail)" = "#7756AA")) +
+  facet_wrap(~Sex) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),
+        legend.position = "none") +
+  labs(title = "Mucolytic Activity Comparisons",
+       subtitle = "Significant differences marked by Age/Frailty within Sex",
+       y = "Halo size (mm)", x = "Group")
+
+# 4. Statistical Analysis (Numerical Output for Cross-Sex Comparisons)
+
+
+print("--- Comparison: Young Female vs Young Male ---")
+print(young_sex_test)
+
+# Overall ANOVA to see if Sex and Group interact
+anova_res <- aov(`Average Halo size(mm)` ~ Sex * Group, data = plot_df)
+summary(anova_res)
