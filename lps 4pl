@@ -95,3 +95,30 @@ master_df$final_conc_4pl[idx[valid_matches]] <- final_results2$final_conc_4pl[va
 
 # 4. Save
 writexl::write_xlsx(master_df, "/Users/eaintsu/Desktop/lpsfemales1.xlsx")
+
+plot_df <- df %>%
+  filter(!is.na(`final_conc_4pl`)) %>%
+  mutate(Age_Group = case_when(
+    Age <= 6  ~ "Young (=<6m)",
+    Age >= 18 & str_detect(sample, "\\.1") ~ "Old (1:2 Dil)", # Look for .1
+    Age >= 18 & !str_detect(sample, "\\.1") ~ "Old (Undiluted)" # Everything else over 18
+  )) %>%
+  filter(!is.na(Age_Group)) %>%
+  # THE FIX: Explicitly set the order of categories
+  mutate(Age_Group = factor(Age_Group, levels = c("Young (=<6m)","Old (Undiluted)", "Old (1:2 Dil)")))
+# 3. Create the Plot with T-Test
+ggplot(plot_df, aes(x = Age_Group, y = `final_conc_4pl`, fill = Age_Group)) +
+  geom_bar(stat = "summary", fun = "mean", alpha = 0.4, color = "black", width = 0.5) +
+  geom_errorbar(stat = "summary", fun.data = "mean_se", width = 0.1) +
+  geom_jitter(width = 0.1, size = 1.5, alpha = 0.7) +
+  geom_text_repel(aes(label = sample), size = 3, fontface = "bold") +
+  geom_signif(comparisons = list(c("Young (=<6m)","Old (Undiluted)", 
+                               "Old (1:2 Dil)" )),map_signif_level = TRUE, size = 0.5, textsize = 8) +
+  
+  scale_fill_manual(values = c("Young (=<6m)" = "#9c6bb5", "Old (18-22m)" = "#6d3c76")) +
+  theme_classic() +
+  labs(title = "Serum LPS: Age-Associated Differences using 4PL",
+       subtitle = "Independent T-test comparing Young and Old cohorts",
+       y = "LPS (ng/ml)",
+       x = "Age Cohort") +
+  theme(legend.position = "none")
