@@ -79,17 +79,19 @@ write_xlsx(updated_master, master_file)
 
 cat("Success! 4PL concentrations added to", master_file, "\n")
 
+#overwriting the second plate
+idx <- as.numeric(base::match(final_results2$sample, master_df$sample))
 
-# 1. Load your master file and your new plate results
-master_df <- read_excel("lpsfemalesresults.xlsx")
-new_plate_results <- final_results2 # The 'final_results' table from your 2nd plate code
+# 2. Check if the column exists; if not, create it
+if (!"final_conc_4pl" %in% colnames(master_df)) {
+  master_df$final_conc_4pl <- NA
+}
 
-# 2. Update only the missing values
-# rows_update() is a great function that finds the ID and replaces just that one column
-updated_df <- master_df %>%
-  rows_update(new_plate_results %>% 
-                select(sample, final_conc_4pl = final_conc_4pl), 
-              by = "sample")
+# 3. Perform the update only for the rows that actually found a match
+# This prevents NAs from breaking your existing data
+valid_matches <- !is.na(idx)
 
-# 3. Overwrite
-write_xlsx(updated_df, "/Users/eaintsu/Desktop/lpsfemales1.xlsx")
+master_df$final_conc_4pl[idx[valid_matches]] <- final_results2$final_conc_4pl[valid_matches]
+
+# 4. Save
+writexl::write_xlsx(master_df, "/Users/eaintsu/Desktop/lpsfemales1.xlsx")
