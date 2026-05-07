@@ -1,0 +1,80 @@
+library(readxl)
+library(tidyverse)
+library(drc) # Ensure this is loaded
+library(writexl)
+
+# 1. Load Data
+trial_file <- "trial.xlsx"
+master_file <- "lpsfemalesresults.xlsx"
+
+stds_key <- read_excel(trial_file, sheet = 1)
+readings <- read_excel(trial_file, sheet = 2)[, 1:13]
+template <- read_excel(trial_file, sheet = 3)[, 1:13]
+dilutions <- read_excel(trial_file, sheet = 4)
+master_df <- read_excel(master_file)
+# Standardize column names
+colnames(readings) <- c("row", as.character(1:12))
+colnames(template) <- c("row", as.character(1:12))
+
+# 2. Process Plate
+plate_long <- readings %>%
+  mutate(across(everything(), as.character)) %>% 
+  pivot_longer(cols = -row, names_to = "col", values_to = "abs") %>%
+  mutate(abs = as.numeric(abs)) %>%
+  inner_join(
+    template %>% 
+      mutate(across(everything(), as.character)) %>%
+      pivot_longer(cols = -row, names_to = "col", values_to = "sample"),
+    by = c("row", "col")
+  ) %>%
+  filter(!is.na(sample))
+
+mean_stats <- plate_long %>%
+  group_by(sample) %>%
+  summarize(abs = mean(abs, na.rm = TRUE), .groups = "drop")
+
+# 3. Fit 4PL Model
+stds_data <- mean_stats %>%
+  inner_join(stds_key, by = "sample") %>%
+  arrange(std_con)
+
+model_4pl <- drm(abs ~ std_con, data = stds_data, fct = LL.4())
+
+# 4. Back-calculate
+unknowns <- mean_stats %>% filter(!str_detect(sample, "Standard"))
+
+back_calculate <- function(abs_val, model) {
+  coeffs <- coef(model)
+  # LL.4: b=Slope, c=Lower, d=Upper, e=ED50
+  # Note: drc coef names can vary, we just need the min/max of the asymptotes
+  low <- min(coeffs[2], coeffs[3])
+  high <- max(coeffs[2], coeffs[3])
+  
+  if (is.na(abs_val) || abs_val <= low || abs_val >= high) return(NA)
+  
+  tryCatch({
+    return(ED(model, abs_val, type = "absolute", display = FALSE)[1])
+  }, error = function(e) return(NA))
+}
+
+unknowns$raw_conc <- sapply(unknowns$abs, back_calculate, model = model_4pl)
+
+# 5. Finalize and Update Master
+final_results <- unknowns %>%
+  left_join(dilutions, by = "sample") %>%
+  mutate(
+    df = replace_na(df, 1),
+    final_conc_4pl = raw_conc * df
+  )
+
+# --- FIX: Explicitly call dplyr::select and check column existence ---
+if ("final_conc_4pl" %in% colnames(master_df)) {
+  master_df <- master_df %>% dplyr::select(-final_conc_4pl)
+}
+
+updated_master <- master_df %>% 
+  left_join(final_results %>% dplyr::select(sample, final_conc_4pl), by = "sample")
+
+write_xlsx(updated_master, master_file)
+
+cat("Success! 4PL concentrations added to", master_file, "\n")
