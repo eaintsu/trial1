@@ -60,7 +60,7 @@ back_calculate <- function(abs_val, model) {
 unknowns$raw_conc <- sapply(unknowns$abs, back_calculate, model = model_4pl)
 
 # 5. Finalize and Update Master
-final_results <- unknowns %>%
+final_results2 <- unknowns %>%
   left_join(dilutions, by = "sample") %>%
   mutate(
     df = replace_na(df, 1),
@@ -78,3 +78,18 @@ updated_master <- master_df %>%
 write_xlsx(updated_master, master_file)
 
 cat("Success! 4PL concentrations added to", master_file, "\n")
+
+
+# 1. Load your master file and your new plate results
+master_df <- read_excel("lpsfemalesresults.xlsx")
+new_plate_results <- final_results2 # The 'final_results' table from your 2nd plate code
+
+# 2. Update only the missing values
+# rows_update() is a great function that finds the ID and replaces just that one column
+updated_df <- master_df %>%
+  rows_update(new_plate_results %>% 
+                select(sample, final_conc_4pl = final_conc_4pl), 
+              by = "sample")
+
+# 3. Overwrite
+write_xlsx(updated_df, "/Users/eaintsu/Desktop/lpsfemales1.xlsx")
