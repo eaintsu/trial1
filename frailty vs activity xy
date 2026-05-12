@@ -1,0 +1,25 @@
+library(ggplot2)
+library(ggpubr)
+
+# 1. Clean up the labels (optional but recommended for the legend)
+plot_df$Sex <- factor(plot_df$Sex, levels = c("M", "F"), labels = c("Male", "Female"))
+
+# 2. Plot both on one axis
+ggplot(plot_df, aes(x = `Frailty scores`, y = `Average Halo size(mm)`, color = Sex, fill = Sex)) +
+  # Points colored by sex
+  geom_point(size = 2, alpha = 0.7) +
+  
+  # Two separate regression lines (one for each Sex)
+  geom_smooth(method = "lm", alpha = 0.15) +
+  
+  # Displays R and p-value for each group automatically
+  stat_cor(method = "pearson", label.y.npc = "top") + 
+  
+  # Professional styling
+  scale_color_manual(values = c("Male" = "#0072B2", "Female" = "#D55E00")) +
+  scale_fill_manual(values = c("Male" = "#0072B2", "Female" = "#D55E00")) +
+  theme_classic() +
+  labs(title = "Mucolytic Activity: Males vs. Females",
+       y = "Halo size (mm)", 
+       x = "Frailty score") +
+  theme(legend.position = "top")
