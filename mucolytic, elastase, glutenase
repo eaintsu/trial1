@@ -43,6 +43,8 @@ plot_df_clean <- plot_df %>%
     ) %>%
     filter(`Average Halo size(mm)` >= lower_bound & `Average Halo size(mm)` <= upper_bound) %>%
     ungroup()
+plot_df$Sex <- factor(plot_df$Sex, levels = c("M", "F"), labels = c("Male", "Female"))
+
 # 3. Create the Plot
 ggplot(plot_df_clean, aes(x = Group, y = `Average Halo size(mm)`, fill = Group)) +
   geom_bar(stat = "summary", fun = "mean", alpha = 0.9, width = 0.3) +
@@ -53,7 +55,7 @@ ggplot(plot_df_clean, aes(x = Group, y = `Average Halo size(mm)`, fill = Group))
   geom_signif(comparisons = age_comparisons, 
               map_signif_level = TRUE, 
               step_increase = 0.12, # Prevents brackets from overlapping
-              textsize = 4,
+              textsize = 4, fontface = "bold",
               vjust = 0.5) +
   
   scale_fill_manual(values = c("Young" = "#B981C8", 
