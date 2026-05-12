@@ -32,12 +32,22 @@ age_comparisons <- list(
   c("Old (Non-Frail)", "Old (Frail)"),
   c("Young", "Old (Frail)")
 )
-
+plot_df_clean <- plot_df %>%
+    group_by(Group) %>%
+    mutate(
+        Q1 = quantile(`Average Halo size(mm)`, 0.25, na.rm = TRUE),
+        Q3 = quantile(`Average Halo size(mm)`, 0.75, na.rm = TRUE),
+        IQR = Q3 - Q1,
+        upper_bound = Q3 + 1.5 * IQR,
+        lower_bound = Q1 - 1.5 * IQR
+    ) %>%
+    filter(`Average Halo size(mm)` >= lower_bound & `Average Halo size(mm)` <= upper_bound) %>%
+    ungroup()
 # 3. Create the Plot
-ggplot(plot_df, aes(x = Group, y = `Average Halo size(mm)`, fill = Group)) +
-  geom_bar(stat = "summary", fun = "mean", alpha = 0.9, color = "black", width = 0.7) +
+ggplot(plot_df_clean, aes(x = Group, y = `Average Halo size(mm)`, fill = Group)) +
+  geom_bar(stat = "summary", fun = "mean", alpha = 0.9, width = 0.3) +
   geom_errorbar(stat = "summary", fun.data = "mean_se", width = 0.1) +
-  geom_jitter(width = 0.15, size = 1.5, alpha = 0.6) +
+  geom_jitter(width = 0.15, size = 1.5, alpha = 0.8) +
   
   # Age/Frailty comparisons within the Sex facets
   geom_signif(comparisons = age_comparisons, 
@@ -58,5 +68,5 @@ ggplot(plot_df, aes(x = Group, y = `Average Halo size(mm)`, fill = Group)) +
        y = "Halo size (mm)", x = "Group")
 
 # Overall ANOVA to see if Sex and Group interact
-anova_res <- aov(`Average Halo size(mm)` ~ Sex * Group, data = plot_df)
+anova_res <- aov(`Average Halo size(mm)` ~ Sex * Group, data = plot_df_clean)
 summary(anova_res)
