@@ -1,0 +1,11 @@
+plot_df_clean <- plot_df %>%
+    group_by(Group) %>%
+    mutate(
+        Q1 = quantile(`LPS conc`, 0.25, na.rm = TRUE),
+        Q3 = quantile(`LPS conc`, 0.75, na.rm = TRUE),
+        IQR = Q3 - Q1,
+        upper_bound = Q3 + 1.5 * IQR,
+        lower_bound = Q1 - 1.5 * IQR
+    ) %>%
+    filter(`LPS conc` >= lower_bound & `LPS conc` <= upper_bound) %>%
+    ungroup()
