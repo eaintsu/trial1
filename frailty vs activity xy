@@ -23,3 +23,31 @@ ggplot(plot_df, aes(x = `Frailty scores`, y = `Average Halo size(mm)`, color = S
        y = "Halo size (mm)", 
        x = "Frailty score") +
   theme(legend.position = "top")
+
+
+#correlation between two activities
+library(dplyr)
+library(broom)
+
+# This creates a small table showing the correlation for each Sex
+plot_df %>%
+  group_by(Sex) %>%
+  summarize(
+    r_value = cor(`minus 6`, muco, method = "spearman", use = "complete.obs"),
+    p_value = cor.test(`minus 6`, muco, method = "spearman")$p.value
+  )
+library(ggplot2)
+library(ggpubr)
+
+ggplot(plot_df, aes(x = `minus 6`, y = muco, color = Sex)) +
+  geom_point(alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", se = TRUE, alpha = 0.1) + # Adds trend lines
+  
+  # This adds the correlation coefficient (R) and p-value to the plot
+  stat_cor(method = "spearman", label.x.npc = "left") + 
+  
+  scale_color_manual(values = c("Male" = "#0072B2", "Female" = "#D55E00")) +
+  theme_classic() +
+  labs(title = "Correlation: minus 6 vs. muco",
+       x = "Variable Minus 6",
+       y = "Muco Activity")
