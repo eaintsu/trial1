@@ -43,3 +43,57 @@ file <-read_excel("/Users/eaintsu/Desktop/All animals data.xlsx")
 > myft <- color(myft, i = ~ label == "Old (Non-Frail)", 
 +               color = "blue")
 > myft
+
+# for MSD plate
+
+
+myft <- file1 %>% 
++     filter(Sex == "Female") %>% 
++     
++     mutate(
++         Age = case_when(
++             age == "Young" ~ "Young",
++             age == "Old" & `Frail status` == "NF" ~ "Old (Non-Frail)",
++             age == "Old" & `Frail status` == "Frail" ~ "Old (Frail)",
++             TRUE ~ NA_character_
++         )
++     )  %>%
++     
++     mutate(
++         Genotype = case_when(
++             Group == "WT-N (+/+)" ~ "WT",
++             Group == "WT-J (+/+)"  ~ "WT",
++             Group == "TNFKO (-/-)" ~ "TNFKO",
++             TRUE ~ NA_character_
++         )
++     )  %>%
++     
++     
++     
++     tbl_summary(by = `Genotype`,    #by function splits into columns
++                 include = c(Age),
++                 statistic = list(all_categorical() ~ "{n} ({p}%)",
++                                  all_continuous() ~ "{mean} ({sd})"),
++                 digits = all_continuous() ~ 2,
++                 
++                 missing_text = "Missing") %>%
++     modify_header(label ~ "**Females**") %>% 
++     
++     gtsummary::as_flex_table()
+> myft <- italic(myft, j = 1) # makes first column italic
+> myft <- bg(myft, bg = "#E6E6FA", part = "header")
+>  myft <- fontsize(myft, part = "all", size = 14) #fontsize for all
+> myft <- color(myft, color = "black", part = "header") #white text header
+> myft <- border_outer(myft, big_b, part = "header") # add border for header
+> myft <- border_outer(myft, big_b, part = "body")
+> myft <- autofit(myft) #autoformat column height and width
+> myft  # print out the table in the viewer
+> myft <- bold(myft, i = ~ label == "Age Group", 
++                              j = 1, bold = TRUE)
+> 
+>  
+>     myft <- color(myft, i = ~ label == "Old (Frail)", # color drug label text by row
++                                    color = "maroon")
+> myft <- color(myft, i = ~ label == "Old (Non-Frail)", 
++                                color = "blue")
+> myft
