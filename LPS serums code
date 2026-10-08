@@ -1,0 +1,28 @@
+#Making demographic table
+ library(readxl)
+> library(flextable)
+> library(gtsummary)
+> 
+> file <-read_excel("/Users/eaintsu/Downloads/20261002_LPSResults_Kyle.xlsx", sheet= "Sheet3")
+myft <- file %>% 
++     
++     mutate(
++         Group = case_when(
++             Age > 0  & Age <= 30 ~ "0-30",
++             Age > 30 & Age <= 60 ~ "31-60",
++             Age > 60 & Age <= 90 ~ "61-90",
++             Age > 90 & Age <=120 ~ "91 and above"
++             
++         )
++     )  %>%
++     mutate(Sex = case_when(Sex == "Female" ~ "Female",
++                            Sex == "Male" ~ "Male")) %>%
++     
++     tbl_summary(by = Sex,    #by function splits into columns
++                 include = c(Group),
++                 statistic = list(all_categorical() ~ "{n} ({p}%)",
++                                  all_continuous() ~ "{mean} ({sd})"),
++                 digits = all_continuous() ~ 2,
++                 
++                 missing_text = "Missing") %>%
++     gtsummary::as_flex_table()
