@@ -26,6 +26,26 @@ myft <- file %>%
 +                 
 +                 missing_text = "Missing") %>%
 +     gtsummary::as_flex_table()
+big_b <- fp_border_default(color = "black", width = 2) # adds black border
+myft <- italic(myft, j = 1) # makes first column italic
+
+    myft <- bg(myft, bg = "white", part = "header")
+    myft <- fontsize(myft, part = "all", size = 14) #fontsize for all
+    myft <- color(myft, color = "maroon", part = "header") #white text header
+    myft <- border_outer(myft, big_b, part = "header") # add border for header
+ myft <- border_outer(myft, big_b, part = "body")
+ myft <- autofit(myft) #autoformat column height and width
+ myft  # print out the table in the viewer
+    myft <- bold(myft, i = ~ label == "Group", 
+                                 j = 1, bold = TRUE)
+     
+        myft <- color(myft, i = ~ label == "0-30", # color drug label text by row
+                        +               color = "yellow")
+        myft <- color(myft, i = ~ label == "31-60)", 
+                        +               color = "orange")
+        myft <- color(myft, i = ~ label == "61-90)", 
+                      +               color = "red")
+     myft
  library(readr)
  library(dplyr)
  library(ggplot2)
