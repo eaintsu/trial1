@@ -40,10 +40,10 @@ myft <- italic(myft, j = 1) # makes first column italic
                                  j = 1, bold = TRUE)
      
         myft <- color(myft, i = ~ label == "0-30", # color drug label text by row
-                        +               color = "yellow")
-        myft <- color(myft, i = ~ label == "31-60)", 
+                        +               color = "gold4")
+        myft <- color(myft, i = ~ label == "31-60", 
                         +               color = "orange")
-        myft <- color(myft, i = ~ label == "61-90)", 
+        myft <- color(myft, i = ~ label == "61-90", 
                       +               color = "red")
      myft
  library(readr)
