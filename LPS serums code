@@ -26,3 +26,83 @@ myft <- file %>%
 +                 
 +                 missing_text = "Missing") %>%
 +     gtsummary::as_flex_table()
+ library(readr)
+ library(dplyr)
+ library(ggplot2)
+ library(readxl)
+ library(flextable)
+lpsdata <-read_excel("/Users/eaintsu/Downloads/20261002_LPSResults_Kyle.xlsx", sheet= "Sheet3")
+# Sex as columns,  OD on Y
+psdata1 <- lpsdata %>%
++        pivot_longer(
++             cols      = starts_with("OD"),   # picks ep1, ep2, ep3...
++                 names_to  = "experiment",
++                 values_to = "value"
++             ) %>%
++         ggplot(aes(x = Sex, y= value)) +
++        geom_point(aes(color = Age))+ 
++    
++     scale_color_gradient(low ="yellow", high= "red")+
++     
++        facet_wrap(vars(experiment),labeller = labeller(experiment= custom_names)) +
++     labs(y="OD at 630nm/ TLR4 activity")+
++     theme(
++             strip.text = element_text(size = 12, face = "bold", color = "navy"),
++                 strip.background = element_rect(fill = "white", color = "black")
++             )+
++  scale_y_log10()
+> lpsdata1
+
+#taking average 
+data_avg <-lpsdata1 %>%
++     filter(experiment %in% c("OD6", "OD7")) %>%
++     group_by(Sample, Sex, Age) %>%
++     summarise(avg = mean(value), n_exp = n(), .groups = "drop") %>%
++     filter(n_exp == 2) 
+fig <- ggplot(data=data_avg,aes(x = Sex, y= avg,color= Age)) +
++    geom_point(size =5)+
++     scale_y_log10()
+> fig
+#Giving columns different names
+custom_names <- c(
++     "OD1" = "1:1",
++     "OD2" = "1:1",
++     "OD3" = "1:1",
++     "OD4" = "1:2",
++     "OD5" = "1:2",
++     "OD6" = "1:10",
++     "OD7" = "1:10",
++ )
+lpsdata1 <- lpsdata %>%
++     pivot_longer(
++         cols      = starts_with("OD"),   # picks ep1, ep2, ep3...
++         names_to  = "experiment",
++         values_to = "value"
++     ) %>%
++     ggplot(aes(x = Age, y= value, color=Sex)) +
++    geom_point()+
++     geom_smooth()+
++     facet_wrap(vars(experiment), labeller = labeller(experiment= custom_names))
+>     scale_y_log10()
+#aesthetics
+lpsdata1 <- lpsdata %>%
++     pivot_longer(
++         cols      = starts_with("OD"),   # picks ep1, ep2, ep3...
++         names_to  = "experiment",
++         values_to = "value"
++     ) %>%
++     ggplot(aes(x = Age, y= value, color=Sex)) +
++    geom_point()+
++     geom_smooth()+
++     facet_wrap(vars(experiment), labeller = labeller(experiment= custom_names))+
++     theme(
++         strip.text = element_text(size = 12, face = "bold", color = "navy"),
++         strip.background = element_rect(fill = "white", color = "black")
++     )+
++     scale_y_log10()+
++     scale_color_manual(values = c(
++         "Female"     = "firebrick", 
++         "Male" = "dodgerblue"
++     ))
+> lpsdata1
+
