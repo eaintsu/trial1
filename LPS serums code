@@ -126,3 +126,20 @@ lpsdata1 <- lpsdata %>%
 +     ))
 > lpsdata1
 
+#stats on graph
+library(ggpmisc)
+ lps <-file %>% pivot_longer(
++             cols      = starts_with("conc"),   # picks ep1, ep2, ep3...
++             names_to  = "experiment",
++             values_to = "value"
++          ) %>%
++          ggplot(aes(x = Age, y= value, color=Sex)) +
++         geom_point()+
++        geom_smooth(method =lm, se = FALSE)+
++        facet_wrap(vars(experiment))+
++ scale_y_log10()+
++     stat_poly_eq(formula = y ~ x, 
++                  aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")), 
++                  parse = TRUE)+
++     labs( y = "LPS conc(ng/ml)")
+> lps
