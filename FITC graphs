@@ -1,0 +1,60 @@
+head (fitc)
+clean <- fitc %>%
++     filter(`Corrected 2 hr` >= 0)
+> clean <- fitc %>%
++     filter (`Corrected 4 hr`>=0)
+fitc_4h<- ggplot (data = clean, aes (x = Category, y= `Corrected 4 hr`,color= Sex))+
++     
++     geom_boxplot(outliers =FALSE)+
++     
++     geom_jitter(position = position_jitterdodge(jitter.width=0.4), size=2, alpha = 0.7)+
++     
++    
++         stat_compare_means(
++             method = "t.test", 
++             label = "p.format", size =5
++         ) +
++     scale_x_discrete(
++         labels = c(
++             "young" = "Young", 
++             "old"   = "Old"
++         )
++     ) +
++     scale_shape_manual (values = c ("Young"= 3,"Old"=5))+
++    
++     scale_color_manual(
++         values = c(
++             "F"     = "purple",   
++             "M" = "black"  
++           
++         )
++     )+
++     scale_fill_manual(
++         values = c(
++             "F"     = "purple",   
++             "M" = "black"  
++             
++         )
++     )+
++   scale_y_log10()+
++    
++     theme_classic()+
++     labs(title ="In vivo 4kDa FITC-Dextran Permeability (4hr)")+
++     labs(x = "Age", y= "Relative permeability") +
++     theme_classic() +
++    
++     theme(
++         plot.title = element_text(hjust = 0.5, face = "bold", size = 14), 
++         axis.title = element_text(size = 12, face = "bold"),             # Changes both X and Y axis titles
++         axis.text = element_text(size = 12)  
++     )
+> fitc_4h
+
+#to compare by sex facets
+facet_wrap(~Sex)+
+  
+        stat_compare_means(
+            comparisons = list(c("young", "old")), 
+            method = "t.test", 
+            label = "p.signif"
+        ) +
