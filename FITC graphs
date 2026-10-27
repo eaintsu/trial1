@@ -58,3 +58,8 @@ facet_wrap(~Sex)+
             method = "t.test", 
             label = "p.signif"
         ) +
+#removing middle age
+clean <- fitc %>%
++     filter(str_detect(Category, "Mid"))
+
+fitc$Category <- factor(fitc$Category, levels = c("young", "Mid", "old"))
